@@ -21,6 +21,10 @@ namespace MISA.ApplicationCore
             _departmentRepository = departmentRepository;
         }
         #endregion
+        protected override bool ValidateCustom(Department entity)
+        {
+            return true;
+        }
         #region Method
         public IEnumerable<Department> GetDepartmentPaging(int limit, int offset)
         {
@@ -52,6 +56,6 @@ namespace MISA.ApplicationCore
         //        return 0;
         //    }
         //}
-        #endregions
+        #endregion
     }
 }

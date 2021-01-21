@@ -8,6 +8,7 @@ namespace MISA.ApplicationCore.Interfaces
      public interface IBaseRepository<TEntity>
     {
         IEnumerable<TEntity> GetEntities();
+        IEnumerable<TEntity> GetEntities(string storeName);
         TEntity GetEntityById(Guid entityId);
         TEntity GetEntityByCode(string entityCode);
         int Add(TEntity entity);

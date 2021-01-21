@@ -68,8 +68,16 @@ namespace MISA.CukCuk.Api.Controllers
         [HttpPost]
         public IActionResult Post(TEntity entity)
         {
-            var rowAffects = _baseService.Add(entity);
-            return Ok(rowAffects);
+            var serviceResult = _baseService.Add(entity);
+            if( serviceResult.MISACode == ApplicationCore.Enums.MISACode.NotValid)
+            {
+                return BadRequest(serviceResult.Data);
+            }
+            else
+            {
+                return Ok(serviceResult);
+            }
+            
         }
         /// <summary>
         /// Sửa thông tin phòng ban  theo ID

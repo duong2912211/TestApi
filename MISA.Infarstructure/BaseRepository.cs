@@ -13,7 +13,7 @@ using System.Text;
 
 namespace MISA.Infarstructure
 {
-    public class BaseRepository<TEntity> : IBaseRepository<TEntity> where TEntity:BaseEntity
+    public class BaseRepository<TEntity> : IBaseRepository<TEntity>, IDisposable where TEntity:BaseEntity
     {
         #region Declare
         IConfiguration _configuration;
@@ -38,11 +38,20 @@ namespace MISA.Infarstructure
         /// </summary>
         /// <returns></returns>
         /// CreatedBy : NPDUONG (12/01/2021)
-        public IEnumerable<TEntity> GetEntities()
+        public virtual IEnumerable<TEntity> GetEntities()
         {
             //Kết nối tới CSDL
             //Khởi tạo các CommandText
             var entities = _dbConnection.Query<TEntity>($"Proc_Get{_tableName}s", commandType: CommandType.StoredProcedure);
+            //Trả về dữ liệu
+            return entities;
+        }
+
+        public virtual IEnumerable<TEntity> GetEntities(string storeName)
+        {
+            //Kết nối tới CSDL
+            //Khởi tạo các CommandText
+            var entities = _dbConnection.Query<TEntity>($"storeName", commandType: CommandType.StoredProcedure);
             //Trả về dữ liệu
             return entities;
         }
@@ -83,11 +92,16 @@ namespace MISA.Infarstructure
         /// CreatedBy : NPDUONG (12/01/2021)
         public int Add(TEntity entity)
         {
-            //Khởi tạo kết nối tới CSDL
-            var param = MappingDbType(entity);
-            //Thực thi commandText
-            var rowAffects = _dbConnection.Execute($"Proc_Insert{_tableName}", param, commandType: CommandType.StoredProcedure);
-            //Trả về kết quả ()
+            var rowAffects = 0;
+            _dbConnection.Open();
+            using (var transaction = _dbConnection.BeginTransaction())
+            {
+                //Khởi tạo kết nối tới CSDL
+                var param = MappingDbType(entity);
+                //Thực thi commandText
+                rowAffects = _dbConnection.Execute($"Proc_Insert{_tableName}", param, commandType: CommandType.StoredProcedure);
+                transaction.Commit();
+            }    
             return rowAffects;
         }
 
@@ -140,7 +154,7 @@ namespace MISA.Infarstructure
                 {
                     param.Add($"@{propertyName}", propertyValue, DbType.String);
                 }
-                if (propertyType == typeof(bool) || propertyType == typeof(bool?))
+                else if (propertyType == typeof(bool) || propertyType == typeof(bool?))
                 {
                     param.Add($"@{propertyName}", propertyValue, DbType.Int32);
                 }
@@ -172,6 +186,14 @@ namespace MISA.Infarstructure
             }    
             var entityReturn = _dbConnection.Query<TEntity>(query, commandType: CommandType.Text).FirstOrDefault();
             return entity;
+        }
+
+        public void Dispose()
+        {
+            if (_dbConnection.State == ConnectionState.Open)
+            {
+                _dbConnection.Close();
+            }
         }
         #endregion
     }

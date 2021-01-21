@@ -34,6 +34,8 @@ namespace MISA.ApplicationCore.Entities
         /// CreatedBy : NPDUONG (15/01/2021)
         [Required]
         [CheckDuplicate]
+        [DisplayName("Mã phòng ban")]
+        [MaxLength(20,"Mã khách hàng không được vượt quá 20 kí tự")]
         public string DepartmentCode { get; set; }
         /// <summary>
         /// Tên phòng ban

@@ -45,9 +45,9 @@ namespace MISA.ApplicationCore.Services
         public virtual ServiceResult Add(TEntity entity)
         {
             entity.EntityState = Enums.EntityState.AddNew;  
-            ServiceResult serviceResult = new ServiceResult();
             //Thực hiện validate:
             var isValidate = Validate(entity);
+              
             if(isValidate == true)
             {
                 _serviceResult.Data = _baseRepository.Add(entity);
@@ -98,17 +98,22 @@ namespace MISA.ApplicationCore.Services
             foreach (var property in properties)
             {
                 var propertyValue = property.GetValue(entity);
-                var displayName = property.GetCustomAttributes(typeof(DisplayNameAttribute), true);
+                var displayName = string.Empty;
+                var displayNameAttributes = property.GetCustomAttributes(typeof(DisplayName), true);
+                if(displayNameAttributes.Length >0 )
+                {
+                    displayName = (displayNameAttributes[0] as DisplayName).Name;   
+                }    
                 //Ktra xem có attribute cần validate ko 
                 if (property.IsDefined(typeof(Required), false))
                 {
                     //Check bắt buộc nhập
                     if (propertyValue == null)
-                    {
+                    { 
                         isValidate = false;
-                        messError.Add($"Thông tin {displayName} không được để trống ");
+                        messError.Add(string.Format(Properties));
                         _serviceResult.MISACode = Enums.MISACode.NotValid;
-                        _serviceResult.Messenger = "Dữ liệu không hợp lệ";
+                        _serviceResult.Messenger = Properties.Resources.Msg_IsNotValid;
                     }
                 }
                 else if (property.IsDefined(typeof(CheckDuplicate), false))
@@ -124,9 +129,36 @@ namespace MISA.ApplicationCore.Services
                             _serviceResult.Messenger = "Dữ liệu không hợp lệ";
                     }    
                  }
+                else if (property.IsDefined(typeof(MaxLength), false))
+                {
+                    //Check độ dài tối đa
+                    var attributeMaxLength = property.GetCustomAttributes(typeof(MaxLength), true)[0];
+                    var length = (attributeMaxLength as MaxLength).Value;
+                    var msg = (attributeMaxLength as MaxLength).ErrorMsg;
+                    if(propertyValue.ToString().Trim().Length> length)
+                    {
+                        isValidate = false;
+                        messError.Add(msg??$"Thông tin vượt quá {length} kí tự ");
+                        _serviceResult.MISACode = Enums.MISACode.NotValid;
+                        _serviceResult.Messenger = "Dữ liệu không hợp lệ";
+                    }    
+                }
             }
             _serviceResult.Data = messError;
+            if (isValidate == true)
+            {
+                isValidate = ValidateCustom(entity);
+            }   
             return isValidate;
+        }
+        /// <summary>
+        /// Hàm thực hiện ktra dữ liệu / nghiệp cụ tùy chỉnh 
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        protected virtual bool ValidateCustom(TEntity entity)
+        {
+            return true;
         }
         #endregion
     }
